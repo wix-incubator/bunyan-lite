@@ -110,17 +110,6 @@ test('time TZ tests', {
     tzEnv = objCopy(process.env);
     tzEnv.TZ = 'Pacific/Honolulu';
 
-    test('time: simple.log local long', function (t) {
-        exec(_('%s -o long -L %s/corpus/simple.log', BUNYAN, __dirname),
-                {env: tzEnv}, function (err, stdout, stderr) {
-            t.ifError(err)
-            t.equal(stdout,
-                // JSSTYLED
-                '[2012-02-08T12:56:52.856-10:00]  INFO: myservice/123 on example.com: '
-                + 'My message\n');
-            t.end();
-        });
-    });
     test('time: simple.log utc long', function (t) {
         exec(_('%s -o long --time utc %s/corpus/simple.log', BUNYAN, __dirname),
                 {env: tzEnv}, function (err, stdout, stderr) {
@@ -128,16 +117,6 @@ test('time TZ tests', {
             t.equal(stdout,
                 // JSSTYLED
                 '[2012-02-08T22:56:52.856Z]  INFO: myservice/123 on example.com: '
-                + 'My message\n');
-            t.end();
-        });
-    });
-    test('time: simple.log local short', function (t) {
-        exec(_('%s -o short -L %s/corpus/simple.log', BUNYAN, __dirname),
-                {env: tzEnv}, function (err, stdout, stderr) {
-            t.ifError(err)
-            t.equal(stdout,
-                '12:56:52.856  INFO myservice: '
                 + 'My message\n');
             t.end();
         });

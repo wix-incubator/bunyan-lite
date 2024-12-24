@@ -1,7 +1,9 @@
 [![npm version](https://img.shields.io/npm/v/bunyan.svg?style=flat)](https://www.npmjs.com/package/bunyan)
 [![Build Status](https://travis-ci.org/trentm/node-bunyan.svg?branch=master)](https://travis-ci.org/trentm/node-bunyan)
 
-Bunyan is **a simple and fast JSON logging library** for node.js services:
+Bunyan Lite (`bunyan-lite`) is a fork of
+[`node-bunyan`](https://github.com/trentm/node-bunyan),
+**a simple and fast JSON logging library** for node.js services:
 
 ```js
 var bunyan = require('bunyan');
@@ -51,8 +53,6 @@ record (see below).
   * [stream type: `raw`](#stream-type-raw)
   * [`raw` + RingBuffer Stream](#raw--ringbuffer-stream)
   * [third-party streams](#third-party-streams)
-- [Runtime log snooping via DTrace](#runtime-log-snooping-via-dtrace)
-  * [DTrace examples](#dtrace-examples)
 - [Runtime environments](#runtime-environments)
   * [Browserify](#browserify)
   * [Webpack](#webpack)
@@ -94,13 +94,6 @@ all versions of Bunyan logs. Therefore you might want to `npm install -g bunyan`
 to get the bunyan CLI on your PATH, then use local bunyan installs for
 node.js library usage of bunyan in your apps.
 
-**Tip**: Installing without optional dependencies can dramatically reduce
-bunyan's install size. **dtrace-provider** is used for dtrace features,
-**mv** is used for RotatingFileStream, and **moment** is used for local time.
-If you don't need these features, consider installing with the
-`--no-optional` flag.
-
-
 # Features
 
 - elegant [log method API](#log-method-api)
@@ -112,7 +105,6 @@ If you don't need these features, consider installing with the
   [`src: true`](#src)
 - lightweight specialization of Logger instances with [`log.child`](#logchild)
 - custom rendering of logged objects with ["serializers"](#serializers)
-- [Runtime log snooping via DTrace support](#runtime-log-snooping-via-dtrace)
 - Support for a few [runtime environments](#runtime-environments): Node.js,
   [Browserify](http://browserify.org/), [Webpack](https://webpack.github.io/), [NW.js](http://nwjs.io/).
 
@@ -124,7 +116,7 @@ named after the logging levels:
 
 ```js
 // hi.js
-var bunyan = require('bunyan');
+var bunyan = require('bunyan-lite');
 var log = bunyan.createLogger({name: 'myapp'});
 log.info('hi');
 log.warn({lang: 'fr'}, 'au revoir');
@@ -146,7 +138,7 @@ $ node hi.js
 ## Constructor API
 
 ```js
-var bunyan = require('bunyan');
+var bunyan = require('bunyan-lite');
 var log = bunyan.createLogger({
     name: <string>,                     // Required
     level: <level name or number>,      // Optional, see "Levels" section
@@ -301,7 +293,7 @@ be exactly as on the parent logger with the addition of the `widget_type`
 field:
 
 ```js
-var bunyan = require('bunyan');
+var bunyan = require('bunyan-lite');
 var log = bunyan.createLogger({name: 'myapp'});
 
 function Wuzzle(options) {
@@ -558,9 +550,7 @@ level "info" will log records at level info and above (warn, error, fatal).
 While using log level *names* is preferred, the actual level values are integers
 internally (10 for "trace", ..., 60 for "fatal"). Constants are defined for
 the levels: `bunyan.TRACE` ... `bunyan.FATAL`. The lowercase level names are
-aliases supported in the API, e.g. `log.level("info")`. There is one exception:
-DTrace integration uses the level names. The fired DTrace probes are named
-'bunyan-$levelName'.
+aliases supported in the API, e.g. `log.level("info")`.
 
 Here is the API for querying and changing levels on an existing logger.
 Recall that a logger instance has an array of output "streams":
@@ -643,7 +633,7 @@ Pretty-printed:
 ## Core fields
 
 - `v`: Required. Integer. Added by Bunyan. Cannot be overridden.
-  This is the Bunyan log format version (`require('bunyan').LOG_VERSION`).
+  This is the Bunyan log format version (`require('bunyan-lite').LOG_VERSION`).
   The log version is a single integer. `0` is until I release a version
   "1.0.0" of node-bunyan. Thereafter, starting with `1`, this will be
   incremented if there is any backward incompatible change to the log record
@@ -747,7 +737,7 @@ manage the stream. A Bunyan Logger instance has one or more streams.
 In general streams are specified with the "streams" option:
 
 ```js
-var bunyan = require('bunyan');
+var bunyan = require('bunyan-lite');
 var log = bunyan.createLogger({
     name: "foo",
     streams: [
@@ -784,7 +774,7 @@ After a bunyan instance has been initialized, you may add additional streams by
 calling the `addStream` function.
 
 ```js
-var bunyan = require('bunyan');
+var bunyan = require('bunyan-lite');
 var log = bunyan.createLogger('myLogger');
 log.addStream({
   name: "myNewStream",
@@ -1105,7 +1095,7 @@ To use a RingBuffer:
 
 ```js
 /* Create a ring buffer that stores the last 100 records. */
-var bunyan = require('bunyan');
+var bunyan = require('bunyan-lite');
 var ringbuffer = new bunyan.RingBuffer({ limit: 100 });
 var log = bunyan.createLogger({
     name: 'foo',
@@ -1142,128 +1132,6 @@ This example emits:
 
 See the [user-maintained list in the Bunyan
 wiki](https://github.com/trentm/node-bunyan/wiki/Awesome-Bunyan).
-
-
-# Runtime log snooping via DTrace
-
-On systems that support DTrace (e.g., illumos derivatives like SmartOS and
-OmniOS, FreeBSD, Mac), Bunyan will create a DTrace provider (`bunyan`) that
-makes available the following probes:
-
-```sh
-log-trace
-log-debug
-log-info
-log-warn
-log-error
-log-fatal
-```
-
-Each of these probes has a single argument: the string that would be
-written to the log.  Note that when a probe is enabled, it will
-fire whenever the corresponding function is called, even if the level of
-the log message is less than that of any stream.
-
-
-## DTrace examples
-
-Trace all log messages coming from any Bunyan module on the system.
-(The `-x strsize=4k` is to raise dtrace's default 256 byte buffer size
-because log messages are longer than typical dtrace probes.)
-
-```sh
-dtrace -x strsize=4k -qn 'bunyan*:::log-*{printf("%d: %s: %s", pid, probefunc, copyinstr(arg0))}'
-```
-
-Trace all log messages coming from the "wuzzle" component:
-
-```sh
-dtrace -x strsize=4k -qn 'bunyan*:::log-*/strstr(this->str = copyinstr(arg0), "\"component\":\"wuzzle\"") != NULL/{printf("%s", this->str)}'
-```
-
-Aggregate debug messages from process 1234, by message:
-
-```sh
-dtrace -x strsize=4k -n 'bunyan1234:::log-debug{@[copyinstr(arg0)] = count()}'
-```
-
-Have the bunyan CLI pretty-print the traced logs:
-
-```sh
-dtrace -x strsize=4k -qn 'bunyan1234:::log-*{printf("%s", copyinstr(arg0))}' | bunyan
-```
-
-A convenience handle has been made for this:
-
-```sh
-bunyan -p 1234
-```
-
-On systems that support the
-[`jstack`](http://dtrace.org/blogs/dap/2012/04/25/profiling-node-js/) action
-via a node.js helper, get a stack backtrace for any debug message that
-includes the string "danger!":
-
-```sh
-dtrace -x strsize=4k -qn 'log-debug/strstr(copyinstr(arg0), "danger!") != NULL/{printf("\n%s", copyinstr(arg0)); jstack()}'
-```
-
-Output of the above might be:
-
-```
-{"name":"foo","hostname":"763bf293-d65c-42d5-872b-4abe25d5c4c7.local","pid":12747,"level":20,"msg":"danger!","time":"2012-10-30T18:28:57.115Z","v":0}
-
-          node`0x87e2010
-          DTraceProviderBindings.node`usdt_fire_probe+0x32
-          DTraceProviderBindings.node`_ZN4node11DTraceProbe5_fireEN2v85LocalINS1_5ValueEEE+0x32d
-          DTraceProviderBindings.node`_ZN4node11DTraceProbe4FireERKN2v89ArgumentsE+0x77
-          << internal code >>
-          (anon) as (anon) at /root/node-bunyan/lib/bunyan.js position 40484
-          << adaptor >>
-          (anon) as doit at /root/my-prog.js position 360
-          (anon) as list.ontimeout at timers.js position 4960
-          << adaptor >>
-          << internal >>
-          << entry >>
-          node`_ZN2v88internalL6InvokeEbNS0_6HandleINS0_10JSFunctionEEENS1_INS0_6ObjectEEEiPS5_Pb+0x101
-          node`_ZN2v88internal9Execution4CallENS0_6HandleINS0_6ObjectEEES4_iPS4_Pbb+0xcb
-          node`_ZN2v88Function4CallENS_6HandleINS_6ObjectEEEiPNS1_INS_5ValueEEE+0xf0
-          node`_ZN4node12MakeCallbackEN2v86HandleINS0_6ObjectEEENS1_INS0_8FunctionEEEiPNS1_INS0_5ValueEEE+0x11f
-          node`_ZN4node12MakeCallbackEN2v86HandleINS0_6ObjectEEENS1_INS0_6StringEEEiPNS1_INS0_5ValueEEE+0x66
-          node`_ZN4node9TimerWrap9OnTimeoutEP10uv_timer_si+0x63
-          node`uv__run_timers+0x66
-          node`uv__run+0x1b
-          node`uv_run+0x17
-          node`_ZN4node5StartEiPPc+0x1d0
-          node`main+0x1b
-          node`_start+0x83
-
-          node`0x87e2010
-          DTraceProviderBindings.node`usdt_fire_probe+0x32
-          DTraceProviderBindings.node`_ZN4node11DTraceProbe5_fireEN2v85LocalINS1_5ValueEEE+0x32d
-          DTraceProviderBindings.node`_ZN4node11DTraceProbe4FireERKN2v89ArgumentsE+0x77
-          << internal code >>
-          (anon) as (anon) at /root/node-bunyan/lib/bunyan.js position 40484
-          << adaptor >>
-          (anon) as doit at /root/my-prog.js position 360
-          (anon) as list.ontimeout at timers.js position 4960
-          << adaptor >>
-          << internal >>
-          << entry >>
-          node`_ZN2v88internalL6InvokeEbNS0_6HandleINS0_10JSFunctionEEENS1_INS0_6ObjectEEEiPS5_Pb+0x101
-          node`_ZN2v88internal9Execution4CallENS0_6HandleINS0_6ObjectEEES4_iPS4_Pbb+0xcb
-          node`_ZN2v88Function4CallENS_6HandleINS_6ObjectEEEiPNS1_INS_5ValueEEE+0xf0
-          node`_ZN4node12MakeCallbackEN2v86HandleINS0_6ObjectEEENS1_INS0_8FunctionEEEiPNS1_INS0_5ValueEEE+0x11f
-          node`_ZN4node12MakeCallbackEN2v86HandleINS0_6ObjectEEENS1_INS0_6StringEEEiPNS1_INS0_5ValueEEE+0x66
-          node`_ZN4node9TimerWrap9OnTimeoutEP10uv_timer_si+0x63
-          node`uv__run_timers+0x66
-          node`uv__run+0x1b
-          node`uv_run+0x17
-          node`_ZN4node5StartEiPPc+0x1d0
-          node`main+0x1b
-          node`_start+0x83
-```
-
 
 # Runtime environments
 
@@ -1313,7 +1181,7 @@ script.
 2. An example script using Bunyan, "play.js":
 
     ```js
-    var bunyan = require('bunyan');
+    var bunyan = require('bunyan-lite');
     var log = bunyan.createLogger({name: 'play', level: 'debug'});
     log.trace('this one does not emit');
     log.debug('hi on debug');   // console.log
