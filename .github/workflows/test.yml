@@ -9,6 +9,7 @@ on:
     paths-ignore:
     - 'docs/**'
     - '*.md'
+  workflow_dispatch:
 
 jobs:
   # Test once on every (available) plat, using LTS node version
