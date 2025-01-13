@@ -1,5 +1,5 @@
 {
-  "name": "bunyan-lite",
+  "name": "bunyan-mini",
   "version": "1.0.0",
   "description": "Fork of node-bunyan without optional dependencies",
   "author": "Trent Mick <trentm@gmail.com> (http://trentm.com)",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wix-incubator/bunyan-lite.git"
+    "url": "git+https://github.com/wix-incubator/bunyan-mini.git"
   },
   "engines": [
     "node >=0.10.0"

@@ -1,4 +1,4 @@
-# Contributing to bunyan-lite
+# Contributing to bunyan-mini
 
 At the moment, this is an experimental fork of the original [`node-bunyan`](https://github.com/trentm/node-bunyan) project.
 

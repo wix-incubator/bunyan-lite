@@ -519,7 +519,7 @@ function parseArgv(argv) {
             case '-L':
                 parsed.timeFormat = TIME_LOCAL;
                 throw new Error(
-                  'bunyan-lite does not support "-L" option');
+                  'bunyan-mini does not support "-L" option');
             case '--time':
                 var timeArg = args.shift();
                 switch (timeArg) {
@@ -528,7 +528,7 @@ function parseArgv(argv) {
                     break
                 case 'local':
                     parsed.timeFormat = TIME_LOCAL;
-                    throw new Error('bunyan-lite does not support option '
+                    throw new Error('bunyan-mini does not support option '
                       + '"--time=local"');
                 case undefined:
                     throw new Error('missing argument to "--time"');
